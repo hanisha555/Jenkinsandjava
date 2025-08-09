@@ -22,7 +22,7 @@ pipeline {
                         echo "AWS CLI already installed. Updating..."
                         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
                         unzip -o awscliv2.zip
-                        sudo ./aws/install --update
+                        sudo ./aws/install --update || echo "Update failed, continuing with existing AWS CLI"
                     fi
                     aws --version
                 '''
@@ -43,13 +43,13 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t ${IMAGE_URI} .'
+                sh "docker build -t ${IMAGE_URI} ."
             }
         }
 
         stage('Docker Login to ECR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'aws-hanisha-ecr', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                withCredentials([usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
                     sh '''
                         aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
                         aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
@@ -62,7 +62,7 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push ${IMAGE_URI}'
+                sh "docker push ${IMAGE_URI}"
             }
         }
     }
